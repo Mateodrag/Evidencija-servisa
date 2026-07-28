@@ -1,0 +1,16 @@
+{
+  "name": "fleet-service-app",
+  "version": "1.0.0",
+  "description": "Aplikacija za praćenje servisa vozila - baza, status i napomene",
+  "main": "server/index.js",
+  "engines": {
+    "node": ">=22.5.0"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  },
+  "dependencies": {
+    "@libsql/client": "^0.14.0"
+  }
+}
