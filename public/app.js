@@ -187,15 +187,16 @@
       .map((v) => {
         const servisInfo =
           v.servis_status === 'unknown'
-            ? 'Nema podataka o zadnjem servisu'
-            : `Sljedeći: ${fmtDate(v.sljedeci_servis_datum)} / ${fmtKm(v.sljedeci_servis_km)}`;
+            ? 'nema podataka'
+            : `${fmtDate(v.sljedeci_servis_datum)} / ${fmtKm(v.sljedeci_servis_km)}`;
+        const vrstaRegLabel = `${tipLabel(v) ? tipLabel(v) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')}`;
 
         return `
         <div class="vehicle-card ${v.ima_nedostatak ? 'has-defect' : ''}" data-id="${v.id}">
           <div class="vehicle-card-top">
             <div>
-              <div class="vehicle-name">${escapeHtml(v.naziv)}</div>
-              <div class="vehicle-sub">${tipLabel(v) ? tipLabel(v) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· ' + escapeHtml(v.baza) : ''}</div>
+              <div class="vehicle-name">${vrstaRegLabel}</div>
+              <div class="vehicle-sub">${escapeHtml(v.naziv)}</div>
             </div>
             <div class="badges">
               <span class="badge ${v.status === 'neispravno' ? 'badge-neispravno' : 'badge-ispravno'}">${v.status === 'neispravno' ? 'Neispravno' : 'Ispravno'}</span>
@@ -204,9 +205,9 @@
             </div>
           </div>
           <div class="vehicle-meta-row">
-            <span>📍 ${escapeHtml(v.baza || 'baza nije postavljena')}</span>
-            <span>🛣️ ${fmtKm(v.trenutna_kilometraza)}</span>
-            <span>🔧 ${servisInfo}</span>
+            <span>Baza: ${escapeHtml(v.baza || 'nije postavljena')}</span>
+            <span>Trenutna kilometraža: ${fmtKm(v.trenutna_kilometraza)}</span>
+            <span><strong>Sljedeći servis: ${servisInfo}</strong></span>
           </div>
         </div>`;
       })
