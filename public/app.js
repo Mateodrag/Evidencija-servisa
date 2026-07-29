@@ -249,11 +249,9 @@
   function renderBooking() {
     const groups = {};
     vehicles.forEach((v) => {
+      if (v.status === 'neispravno') return; // booking broji samo ispravna (vozna) vozila
       const baza = v.baza && v.baza.trim() ? v.baza : 'Bez baze';
-      if (!groups[baza]) groups[baza] = { total: 0, quad: 0, dvosjed: 0, cetverosjed: 0, buggyNeoznaceno: 0 };
-      groups[baza].total++; // ukupno vozila na lokaciji - broji SVA vozila, ispravna i neispravna
-
-      if (v.status === 'neispravno') return; // razdvajanje po tipu ide samo za ispravna vozila
+      if (!groups[baza]) groups[baza] = { quad: 0, dvosjed: 0, cetverosjed: 0, buggyNeoznaceno: 0 };
       if (v.tip === 'quad') {
         groups[baza].quad++;
       } else if (v.tip === 'buggy') {
@@ -270,11 +268,16 @@
       return;
     }
 
+    // Ukupno = zbroj quadova i buggyja (oba podtipa) - dakle sva ispravna, vozna vozila na toj bazi.
+    function totalFor(g) {
+      return g.quad + g.dvosjed + g.cetverosjed + g.buggyNeoznaceno;
+    }
+
     // Pregled ukupnog broja vozila po lokaciji - za brzu usporedbu jedne baze s drugom.
     const overviewHtml = `
       <div class="summary-row">
         ${bazaNames
-          .map((b) => `<div class="summary-chip"><strong>${groups[b].total}</strong>Ukupno vozila · ${escapeHtml(b)}</div>`)
+          .map((b) => `<div class="summary-chip"><strong>${totalFor(groups[b])}</strong>Ukupno vozila · ${escapeHtml(b)}</div>`)
           .join('')}
       </div>`;
 
@@ -291,7 +294,7 @@
         }
         return `
       <div class="panel booking-card">
-        <h3>📍 ${escapeHtml(b)} <span class="booking-total-badge">${g.total} vozila ukupno</span></h3>
+        <h3>📍 ${escapeHtml(b)} <span class="booking-total-badge">${totalFor(g)} vozila ukupno</span></h3>
         <div class="booking-counts">
           ${items
             .map(
