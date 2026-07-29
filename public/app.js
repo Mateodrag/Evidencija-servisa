@@ -108,9 +108,14 @@
     bazaOptions: document.getElementById('baza-options'),
   };
 
-  function tipLabel(tip) {
-    if (tip === 'quad') return 'Quad';
-    if (tip === 'buggy') return 'Buggy';
+  function tipLabel(v) {
+    if (!v) return '';
+    if (v.tip === 'quad') return 'Quad';
+    if (v.tip === 'buggy') {
+      if (v.podtip === 'dvosjed') return 'Buggy (dvosjed)';
+      if (v.podtip === 'cetverosjed') return 'Buggy (četverosjed)';
+      return 'Buggy';
+    }
     return '';
   }
 
@@ -190,7 +195,7 @@
           <div class="vehicle-card-top">
             <div>
               <div class="vehicle-name">${escapeHtml(v.naziv)}</div>
-              <div class="vehicle-sub">${tipLabel(v.tip) ? tipLabel(v.tip) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· ' + escapeHtml(v.baza) : ''}</div>
+              <div class="vehicle-sub">${tipLabel(v) ? tipLabel(v) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· ' + escapeHtml(v.baza) : ''}</div>
             </div>
             <div class="badges">
               <span class="badge ${v.status === 'neispravno' ? 'badge-neispravno' : 'badge-ispravno'}">${v.status === 'neispravno' ? 'Neispravno' : 'Ispravno'}</span>
@@ -244,11 +249,18 @@
   function renderBooking() {
     const groups = {};
     vehicles.forEach((v) => {
-      if (v.status === 'neispravno') return; // booking broji samo ispravna vozila
       const baza = v.baza && v.baza.trim() ? v.baza : 'Bez baze';
-      if (!groups[baza]) groups[baza] = { quad: 0, buggy: 0 };
-      if (v.tip === 'quad') groups[baza].quad++;
-      else if (v.tip === 'buggy') groups[baza].buggy++;
+      if (!groups[baza]) groups[baza] = { total: 0, quad: 0, dvosjed: 0, cetverosjed: 0, buggyNeoznaceno: 0 };
+      groups[baza].total++; // ukupno vozila na lokaciji - broji SVA vozila, ispravna i neispravna
+
+      if (v.status === 'neispravno') return; // razdvajanje po tipu ide samo za ispravna vozila
+      if (v.tip === 'quad') {
+        groups[baza].quad++;
+      } else if (v.tip === 'buggy') {
+        if (v.podtip === 'dvosjed') groups[baza].dvosjed++;
+        else if (v.podtip === 'cetverosjed') groups[baza].cetverosjed++;
+        else groups[baza].buggyNeoznaceno++;
+      }
     });
 
     const bazaNames = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'hr'));
@@ -258,24 +270,44 @@
       return;
     }
 
-    el.bookingContent.innerHTML = bazaNames
-      .map(
-        (b) => `
+    // Pregled ukupnog broja vozila po lokaciji - za brzu usporedbu jedne baze s drugom.
+    const overviewHtml = `
+      <div class="summary-row">
+        ${bazaNames
+          .map((b) => `<div class="summary-chip"><strong>${groups[b].total}</strong>Ukupno vozila · ${escapeHtml(b)}</div>`)
+          .join('')}
+      </div>`;
+
+    const cardsHtml = bazaNames
+      .map((b) => {
+        const g = groups[b];
+        const items = [
+          { num: g.quad, label: 'Quadova (ispravnih)' },
+          { num: g.dvosjed, label: 'Buggy dvosjed (ispravnih)' },
+          { num: g.cetverosjed, label: 'Buggy četverosjed (ispravnih)' },
+        ];
+        if (g.buggyNeoznaceno > 0) {
+          items.push({ num: g.buggyNeoznaceno, label: '⚠️ Buggy bez oznake sjedišta' });
+        }
+        return `
       <div class="panel booking-card">
-        <h3>📍 ${escapeHtml(b)}</h3>
+        <h3>📍 ${escapeHtml(b)} <span class="booking-total-badge">${g.total} vozila ukupno</span></h3>
         <div class="booking-counts">
+          ${items
+            .map(
+              (it) => `
           <div class="booking-count-item">
-            <span class="booking-count-num">${groups[b].quad}</span>
-            <span>Quadova (ispravnih)</span>
-          </div>
-          <div class="booking-count-item">
-            <span class="booking-count-num">${groups[b].buggy}</span>
-            <span>Buggyja (ispravnih)</span>
-          </div>
+            <span class="booking-count-num">${it.num}</span>
+            <span>${it.label}</span>
+          </div>`
+            )
+            .join('')}
         </div>
-      </div>`
-      )
+      </div>`;
+      })
       .join('');
+
+    el.bookingContent.innerHTML = overviewHtml + cardsHtml;
   }
 
   function showBookingView() {
@@ -320,7 +352,7 @@
         <div class="detail-header-top">
           <div>
             <h2>${escapeHtml(v.naziv)}</h2>
-            <div class="vehicle-sub">${tipLabel(v.tip) ? tipLabel(v.tip) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· 📍 ' + escapeHtml(v.baza) : ''}</div>
+            <div class="vehicle-sub">${tipLabel(v) ? tipLabel(v) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· 📍 ' + escapeHtml(v.baza) : ''}</div>
           </div>
           <div class="badges">
             <span class="badge ${servisBadgeClass(v.servis_status)}" style="font-size:0.85rem;">${servisLabel(v.servis_status)}</span>
@@ -564,6 +596,8 @@
     document.getElementById('v-baza').value = vehicle ? vehicle.baza || '' : '';
     document.getElementById('v-status').value = vehicle ? vehicle.status : 'ispravno';
     document.getElementById('v-tip').value = vehicle ? vehicle.tip || '' : '';
+    document.getElementById('v-podtip').value = vehicle ? vehicle.podtip || '' : '';
+    togglePodtipField();
     document.getElementById('v-km').value = vehicle ? vehicle.trenutna_kilometraza || '' : '';
     document.getElementById('v-zadnji-datum').value = vehicle ? vehicle.zadnji_servis_datum || '' : '';
     document.getElementById('v-zadnji-km').value = vehicle ? vehicle.zadnji_servis_km || '' : '';
@@ -577,6 +611,14 @@
   function closeVehicleModal() {
     el.modalVehicle.classList.add('hidden');
   }
+
+  function togglePodtipField() {
+    const isBuggy = document.getElementById('v-tip').value === 'buggy';
+    document.getElementById('v-podtip-wrap').classList.toggle('hidden', !isBuggy);
+    if (!isBuggy) document.getElementById('v-podtip').value = '';
+  }
+
+  document.getElementById('v-tip').addEventListener('change', togglePodtipField);
 
   el.btnAddVehicle.addEventListener('click', () => openVehicleModal(null));
   el.btnCancelVehicle.addEventListener('click', closeVehicleModal);
@@ -593,6 +635,7 @@
       baza: document.getElementById('v-baza').value,
       status: document.getElementById('v-status').value,
       tip: document.getElementById('v-tip').value || null,
+      podtip: document.getElementById('v-tip').value === 'buggy' ? (document.getElementById('v-podtip').value || null) : null,
       trenutna_kilometraza: document.getElementById('v-km').value || 0,
       zadnji_servis_datum: document.getElementById('v-zadnji-datum').value || null,
       zadnji_servis_km: document.getElementById('v-zadnji-km').value || null,

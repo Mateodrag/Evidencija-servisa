@@ -61,7 +61,7 @@
 
   <!-- ===== BOOKING - broj quadova/buggyja po lokaciji ===== -->
   <section id="view-booking" class="view hidden">
-    <p class="field-hint" style="margin-top:0;">Broj trenutno <strong>ispravnih</strong> vozila po lokaciji (neispravna se ne broje).</p>
+    <p class="field-hint" style="margin-top:0;">"Ukupno vozila" broji sva vozila na lokaciji (i ispravna i neispravna). Brojevi po vrsti (Quad / Buggy) broje samo <strong>ispravna</strong> vozila - ona koja se stvarno mogu iznajmiti.</p>
     <div id="booking-content"></div>
   </section>
 
@@ -98,7 +98,14 @@
           </select>
         </label>
       </div>
-      <p class="field-hint">Vrsta vozila (Quad / Buggy) se koristi za brojanje na kartici "Booking".</p>
+      <label id="v-podtip-wrap" class="hidden">Buggy - broj sjedišta
+        <select id="v-podtip">
+          <option value="">— odaberi —</option>
+          <option value="dvosjed">Dvosjed</option>
+          <option value="cetverosjed">Četverosjed</option>
+        </select>
+      </label>
+      <p class="field-hint">Vrsta vozila (Quad / Buggy) i broj sjedišta kod buggyja koriste se za brojanje na kartici "Booking".</p>
       <div class="grid-2">
         <label>Trenutna kilometraža (km)
           <input id="v-km" type="number" min="0" step="1" placeholder="npr. 125000" />
