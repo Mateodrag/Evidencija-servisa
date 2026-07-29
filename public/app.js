@@ -202,6 +202,7 @@
               <span class="badge ${v.status === 'neispravno' ? 'badge-neispravno' : 'badge-ispravno'}">${v.status === 'neispravno' ? 'Neispravno' : 'Ispravno'}</span>
               <span class="badge ${servisBadgeClass(v.servis_status)}">${servisLabel(v.servis_status)}</span>
               ${v.ima_nedostatak ? '<span class="badge badge-nedostatak">⚠️ Nedostatak</span>' : ''}
+              ${v.za_vodica ? '<span class="badge badge-vodic">🧭 Vodič</span>' : ''}
             </div>
           </div>
           <div class="vehicle-meta-row">
@@ -252,7 +253,12 @@
     vehicles.forEach((v) => {
       if (v.status === 'neispravno') return; // booking broji samo ispravna (vozna) vozila
       const baza = v.baza && v.baza.trim() ? v.baza : 'Bez baze';
-      if (!groups[baza]) groups[baza] = { quad: 0, dvosjed: 0, cetverosjed: 0, buggyNeoznaceno: 0 };
+      if (!groups[baza]) groups[baza] = { quad: 0, dvosjed: 0, cetverosjed: 0, buggyNeoznaceno: 0, vodicka: 0 };
+
+      if (v.za_vodica) {
+        groups[baza].vodicka++;
+        return; // vozila za vodiče se ne nude gostima - broje se posebno, ne u quad/buggy
+      }
       if (v.tip === 'quad') {
         groups[baza].quad++;
       } else if (v.tip === 'buggy') {
@@ -269,9 +275,9 @@
       return;
     }
 
-    // Ukupno = zbroj quadova i buggyja (oba podtipa) - dakle sva ispravna, vozna vozila na toj bazi.
+    // Ukupno = sva ispravna vozila na bazi - quadovi, buggyji (oba podtipa) i vozila za vodiče.
     function totalFor(g) {
-      return g.quad + g.dvosjed + g.cetverosjed + g.buggyNeoznaceno;
+      return g.quad + g.dvosjed + g.cetverosjed + g.buggyNeoznaceno + g.vodicka;
     }
 
     // Pregled ukupnog broja vozila po lokaciji - za brzu usporedbu jedne baze s drugom.
@@ -289,6 +295,7 @@
           { num: g.quad, label: 'Quadova (ispravnih)' },
           { num: g.dvosjed, label: 'Buggy dvosjed (ispravnih)' },
           { num: g.cetverosjed, label: 'Buggy četverosjed (ispravnih)' },
+          { num: g.vodicka, label: '🧭 Za vodiče (nisu za goste)' },
         ];
         if (g.buggyNeoznaceno > 0) {
           items.push({ num: g.buggyNeoznaceno, label: '⚠️ Buggy bez oznake sjedišta' });
@@ -602,6 +609,7 @@
     document.getElementById('v-tip').value = vehicle ? vehicle.tip || '' : '';
     document.getElementById('v-podtip').value = vehicle ? vehicle.podtip || '' : '';
     togglePodtipField();
+    document.getElementById('v-za-vodica').checked = vehicle ? !!vehicle.za_vodica : false;
     document.getElementById('v-km').value = vehicle ? vehicle.trenutna_kilometraza || '' : '';
     document.getElementById('v-zadnji-datum').value = vehicle ? vehicle.zadnji_servis_datum || '' : '';
     document.getElementById('v-zadnji-km').value = vehicle ? vehicle.zadnji_servis_km || '' : '';
@@ -640,6 +648,7 @@
       status: document.getElementById('v-status').value,
       tip: document.getElementById('v-tip').value || null,
       podtip: document.getElementById('v-tip').value === 'buggy' ? (document.getElementById('v-podtip').value || null) : null,
+      za_vodica: document.getElementById('v-za-vodica').checked,
       trenutna_kilometraza: document.getElementById('v-km').value || 0,
       zadnji_servis_datum: document.getElementById('v-zadnji-datum').value || null,
       zadnji_servis_km: document.getElementById('v-zadnji-km').value || null,

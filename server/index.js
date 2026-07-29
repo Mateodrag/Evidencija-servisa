@@ -177,6 +177,7 @@ addRoute('POST', '/api/vehicles', async (req, res, params, body) => {
     status,
     tip,
     podtip,
+    za_vodica,
     trenutna_kilometraza,
     interval_mjeseci,
     interval_km,
@@ -193,8 +194,8 @@ addRoute('POST', '/api/vehicles', async (req, res, params, body) => {
 
   const info = await db.dbRun(
     `INSERT INTO vehicles
-      (naziv, registracija, baza, status, tip, podtip, trenutna_kilometraza, interval_mjeseci, interval_km, prvi_servis_km, zadnji_servis_datum, zadnji_servis_km)
-    VALUES (@naziv, @registracija, @baza, @status, @tip, @podtip, @trenutna_kilometraza, @interval_mjeseci, @interval_km, @prvi_servis_km, @zadnji_servis_datum, @zadnji_servis_km)`,
+      (naziv, registracija, baza, status, tip, podtip, za_vodica, trenutna_kilometraza, interval_mjeseci, interval_km, prvi_servis_km, zadnji_servis_datum, zadnji_servis_km)
+    VALUES (@naziv, @registracija, @baza, @status, @tip, @podtip, @za_vodica, @trenutna_kilometraza, @interval_mjeseci, @interval_km, @prvi_servis_km, @zadnji_servis_datum, @zadnji_servis_km)`,
     {
       naziv: String(naziv).trim(),
       registracija: registracija || null,
@@ -202,6 +203,7 @@ addRoute('POST', '/api/vehicles', async (req, res, params, body) => {
       status: status === 'neispravno' ? 'neispravno' : 'ispravno',
       tip: normTip,
       podtip: normTip === 'buggy' ? normalizePodtip(podtip) : null,
+      za_vodica: za_vodica ? 1 : 0,
       trenutna_kilometraza: Number(trenutna_kilometraza || 0),
       interval_mjeseci: Number(interval_mjeseci || 6),
       interval_km: Number(interval_km || 1500),
@@ -226,6 +228,7 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
     'status',
     'tip',
     'podtip',
+    'za_vodica',
     'trenutna_kilometraza',
     'interval_mjeseci',
     'interval_km',
@@ -250,6 +253,9 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
   if (Object.prototype.hasOwnProperty.call(updates, 'podtip')) {
     updates.podtip = normalizePodtip(updates.podtip);
   }
+  if (Object.prototype.hasOwnProperty.call(updates, 'za_vodica')) {
+    updates.za_vodica = updates.za_vodica ? 1 : 0;
+  }
 
   const merged = { ...vehicle, ...updates };
   // podtip (dvosjed/četverosjed) ima smisla samo za buggy - za sve ostalo ga čistimo.
@@ -262,6 +268,7 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
     status: merged.status,
     tip: merged.tip,
     podtip: merged.podtip,
+    za_vodica: merged.za_vodica ? 1 : 0,
     trenutna_kilometraza: merged.trenutna_kilometraza,
     interval_mjeseci: merged.interval_mjeseci,
     interval_km: merged.interval_km,
@@ -279,6 +286,7 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
       status = @status,
       tip = @tip,
       podtip = @podtip,
+      za_vodica = @za_vodica,
       trenutna_kilometraza = @trenutna_kilometraza,
       interval_mjeseci = @interval_mjeseci,
       interval_km = @interval_km,

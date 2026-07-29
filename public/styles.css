@@ -248,6 +248,7 @@ body {
 .badge-neispravno { background: var(--overdue-bg); color: var(--overdue); }
 .badge-ispravno { background: var(--ok-bg); color: var(--ok); }
 .badge-nedostatak { background: var(--overdue-bg); color: var(--overdue); }
+.badge-vodic { background: #e0e7ff; color: #4338ca; }
 
 .vehicle-meta-row {
   display: flex;

@@ -171,6 +171,14 @@ CREATE TABLE IF NOT EXISTS kontrole (
   } catch (e) {
     // stupac vjerojatno već postoji - u redu je
   }
+
+  // Migracija za baze napravljene prije dodavanja stupca za_vodica (vozilo rezervirano za vodiča,
+  // ne za iznajmljivanje gostima) - koristi se za posebno grupiranje u Bookingu.
+  try {
+    await dbExec('ALTER TABLE vehicles ADD COLUMN za_vodica INTEGER DEFAULT 0');
+  } catch (e) {
+    // stupac vjerojatno već postoji - u redu je
+  }
 }
 
 module.exports = { dbAll, dbGet, dbRun, dbExec, initSchema, backend };

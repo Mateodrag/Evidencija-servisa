@@ -105,7 +105,11 @@
           <option value="cetverosjed">Četverosjed</option>
         </select>
       </label>
-      <p class="field-hint">Vrsta vozila (Quad / Buggy) i broj sjedišta kod buggyja koriste se za brojanje na kartici "Booking".</p>
+      <label style="display:flex;align-items:center;gap:8px;font-weight:400;">
+        <input type="checkbox" id="v-za-vodica" style="width:auto;margin:0;display:inline;" />
+        Vozilo za vodiča (rezervirano, ne nudi se gostima za iznajmljivanje)
+      </label>
+      <p class="field-hint">Vrsta vozila (Quad / Buggy), broj sjedišta kod buggyja i oznaka "za vodiča" koriste se za brojanje na kartici "Booking".</p>
       <div class="grid-2">
         <label>Trenutna kilometraža (km)
           <input id="v-km" type="number" min="0" step="1" placeholder="npr. 125000" />
