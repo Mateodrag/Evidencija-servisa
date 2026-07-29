@@ -28,6 +28,16 @@ function withServiceInfo(vehicle) {
   return { ...vehicle, ...computeServiceInfo(vehicle) };
 }
 
+// SQL fragment koji uz sve stupce vozila vraća i "ima_nedostatak" - true ako vozilo ima
+// barem jednu neriješenu napomenu (uočeni nedostatak).
+const VEHICLE_SELECT = `v.*, EXISTS(
+  SELECT 1 FROM notes n WHERE n.vehicle_id = v.id AND n.rijeseno = 0
+) AS ima_nedostatak`;
+
+function normalizeTip(tip) {
+  return tip === 'quad' || tip === 'buggy' ? tip : null;
+}
+
 // Ulazni niz servisa je poredan od najnovijeg prema najstarijem (DESC).
 // Ovdje svakom zapisu pridružujemo redni broj servisa (1. servis = najstariji).
 function withServiceNumbers(recordsDesc) {
@@ -132,12 +142,12 @@ async function handleApi(req, res, pathname) {
 // ---------- VEHICLES ----------
 
 addRoute('GET', '/api/vehicles', async (req, res) => {
-  const rows = await db.dbAll('SELECT * FROM vehicles ORDER BY naziv COLLATE NOCASE');
+  const rows = await db.dbAll(`SELECT ${VEHICLE_SELECT} FROM vehicles v ORDER BY v.naziv COLLATE NOCASE`);
   sendJson(res, 200, rows.map(withServiceInfo));
 });
 
 addRoute('GET', '/api/vehicles/:id', async (req, res, params) => {
-  const vehicle = await db.dbGet('SELECT * FROM vehicles WHERE id = ?', [params.id]);
+  const vehicle = await db.dbGet(`SELECT ${VEHICLE_SELECT} FROM vehicles v WHERE v.id = ?`, [params.id]);
   if (!vehicle) return notFound(res, 'Vozilo nije pronađeno');
 
   const serviceRecordsRaw = await db.dbAll(
@@ -161,6 +171,7 @@ addRoute('POST', '/api/vehicles', async (req, res, params, body) => {
     registracija,
     baza,
     status,
+    tip,
     trenutna_kilometraza,
     interval_mjeseci,
     interval_km,
@@ -175,13 +186,14 @@ addRoute('POST', '/api/vehicles', async (req, res, params, body) => {
 
   const info = await db.dbRun(
     `INSERT INTO vehicles
-      (naziv, registracija, baza, status, trenutna_kilometraza, interval_mjeseci, interval_km, prvi_servis_km, zadnji_servis_datum, zadnji_servis_km)
-    VALUES (@naziv, @registracija, @baza, @status, @trenutna_kilometraza, @interval_mjeseci, @interval_km, @prvi_servis_km, @zadnji_servis_datum, @zadnji_servis_km)`,
+      (naziv, registracija, baza, status, tip, trenutna_kilometraza, interval_mjeseci, interval_km, prvi_servis_km, zadnji_servis_datum, zadnji_servis_km)
+    VALUES (@naziv, @registracija, @baza, @status, @tip, @trenutna_kilometraza, @interval_mjeseci, @interval_km, @prvi_servis_km, @zadnji_servis_datum, @zadnji_servis_km)`,
     {
       naziv: String(naziv).trim(),
       registracija: registracija || null,
       baza: baza || null,
       status: status === 'neispravno' ? 'neispravno' : 'ispravno',
+      tip: normalizeTip(tip),
       trenutna_kilometraza: Number(trenutna_kilometraza || 0),
       interval_mjeseci: Number(interval_mjeseci || 6),
       interval_km: Number(interval_km || 1500),
@@ -204,6 +216,7 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
     'registracija',
     'baza',
     'status',
+    'tip',
     'trenutna_kilometraza',
     'interval_mjeseci',
     'interval_km',
@@ -222,6 +235,9 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
   if (Object.prototype.hasOwnProperty.call(updates, 'status')) {
     updates.status = updates.status === 'neispravno' ? 'neispravno' : 'ispravno';
   }
+  if (Object.prototype.hasOwnProperty.call(updates, 'tip')) {
+    updates.tip = normalizeTip(updates.tip);
+  }
 
   const merged = { ...vehicle, ...updates };
   const bindParams = {
@@ -229,6 +245,7 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
     registracija: merged.registracija,
     baza: merged.baza,
     status: merged.status,
+    tip: merged.tip,
     trenutna_kilometraza: merged.trenutna_kilometraza,
     interval_mjeseci: merged.interval_mjeseci,
     interval_km: merged.interval_km,
@@ -244,6 +261,7 @@ addRoute('PUT', '/api/vehicles/:id', async (req, res, params, body) => {
       registracija = @registracija,
       baza = @baza,
       status = @status,
+      tip = @tip,
       trenutna_kilometraza = @trenutna_kilometraza,
       interval_mjeseci = @interval_mjeseci,
       interval_km = @interval_km,

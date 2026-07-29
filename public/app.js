@@ -87,6 +87,10 @@
   const el = {
     listView: document.getElementById('view-list'),
     detailView: document.getElementById('view-detail'),
+    bookingView: document.getElementById('view-booking'),
+    bookingContent: document.getElementById('booking-content'),
+    tabPopis: document.getElementById('tab-popis'),
+    tabBooking: document.getElementById('tab-booking'),
     vehicleList: document.getElementById('vehicle-list'),
     summaryRow: document.getElementById('summary-row'),
     filterSearch: document.getElementById('filter-search'),
@@ -103,6 +107,12 @@
     btnDeleteVehicle: document.getElementById('btn-delete-vehicle'),
     bazaOptions: document.getElementById('baza-options'),
   };
+
+  function tipLabel(tip) {
+    if (tip === 'quad') return 'Quad';
+    if (tip === 'buggy') return 'Buggy';
+    return '';
+  }
 
   // ---------- Učitavanje podataka ----------
 
@@ -176,15 +186,16 @@
             : `Sljedeći: ${fmtDate(v.sljedeci_servis_datum)} / ${fmtKm(v.sljedeci_servis_km)}`;
 
         return `
-        <div class="vehicle-card" data-id="${v.id}">
+        <div class="vehicle-card ${v.ima_nedostatak ? 'has-defect' : ''}" data-id="${v.id}">
           <div class="vehicle-card-top">
             <div>
               <div class="vehicle-name">${escapeHtml(v.naziv)}</div>
-              <div class="vehicle-sub">${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· ' + escapeHtml(v.baza) : ''}</div>
+              <div class="vehicle-sub">${tipLabel(v.tip) ? tipLabel(v.tip) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· ' + escapeHtml(v.baza) : ''}</div>
             </div>
             <div class="badges">
               <span class="badge ${v.status === 'neispravno' ? 'badge-neispravno' : 'badge-ispravno'}">${v.status === 'neispravno' ? 'Neispravno' : 'Ispravno'}</span>
               <span class="badge ${servisBadgeClass(v.servis_status)}">${servisLabel(v.servis_status)}</span>
+              ${v.ima_nedostatak ? '<span class="badge badge-nedostatak">⚠️ Nedostatak</span>' : ''}
             </div>
           </div>
           <div class="vehicle-meta-row">
@@ -220,10 +231,78 @@
   function showListView() {
     location.hash = '';
     el.detailView.classList.add('hidden');
+    el.bookingView.classList.add('hidden');
     el.listView.classList.remove('hidden');
+    el.tabBooking.classList.remove('active');
+    el.tabPopis.classList.add('active');
     loadVehicles();
     loadBaze();
   }
+
+  // ---------- Booking - broj ispravnih quadova/buggyja po bazi ----------
+
+  function renderBooking() {
+    const groups = {};
+    vehicles.forEach((v) => {
+      if (v.status === 'neispravno') return; // booking broji samo ispravna vozila
+      const baza = v.baza && v.baza.trim() ? v.baza : 'Bez baze';
+      if (!groups[baza]) groups[baza] = { quad: 0, buggy: 0 };
+      if (v.tip === 'quad') groups[baza].quad++;
+      else if (v.tip === 'buggy') groups[baza].buggy++;
+    });
+
+    const bazaNames = Object.keys(groups).sort((a, b) => a.localeCompare(b, 'hr'));
+
+    if (!bazaNames.length) {
+      el.bookingContent.innerHTML = '<p class="empty-hint">Nema unesenih vozila.</p>';
+      return;
+    }
+
+    el.bookingContent.innerHTML = bazaNames
+      .map(
+        (b) => `
+      <div class="panel booking-card">
+        <h3>📍 ${escapeHtml(b)}</h3>
+        <div class="booking-counts">
+          <div class="booking-count-item">
+            <span class="booking-count-num">${groups[b].quad}</span>
+            <span>Quadova (ispravnih)</span>
+          </div>
+          <div class="booking-count-item">
+            <span class="booking-count-num">${groups[b].buggy}</span>
+            <span>Buggyja (ispravnih)</span>
+          </div>
+        </div>
+      </div>`
+      )
+      .join('');
+  }
+
+  function showBookingView() {
+    location.hash = '#/booking';
+    el.detailView.classList.add('hidden');
+    el.listView.classList.add('hidden');
+    el.bookingView.classList.remove('hidden');
+    el.tabPopis.classList.remove('active');
+    el.tabBooking.classList.add('active');
+
+    if (vehicles.length) {
+      renderBooking();
+    } else {
+      el.bookingContent.innerHTML = '<p class="empty-hint">Učitavanje...</p>';
+      api('/vehicles')
+        .then((list) => {
+          vehicles = list;
+          renderBooking();
+        })
+        .catch((e) => {
+          el.bookingContent.innerHTML = `<p class="empty-hint">Greška: ${escapeHtml(e.message)}</p>`;
+        });
+    }
+  }
+
+  el.tabPopis.addEventListener('click', showListView);
+  el.tabBooking.addEventListener('click', showBookingView);
 
   function renderDetail(v) {
     const servisInfo =
@@ -241,9 +320,12 @@
         <div class="detail-header-top">
           <div>
             <h2>${escapeHtml(v.naziv)}</h2>
-            <div class="vehicle-sub">${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· 📍 ' + escapeHtml(v.baza) : ''}</div>
+            <div class="vehicle-sub">${tipLabel(v.tip) ? tipLabel(v.tip) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')} ${v.baza ? '· 📍 ' + escapeHtml(v.baza) : ''}</div>
           </div>
-          <span class="badge ${servisBadgeClass(v.servis_status)}" style="font-size:0.85rem;">${servisLabel(v.servis_status)}</span>
+          <div class="badges">
+            <span class="badge ${servisBadgeClass(v.servis_status)}" style="font-size:0.85rem;">${servisLabel(v.servis_status)}</span>
+            ${v.ima_nedostatak ? '<span class="badge badge-nedostatak" style="font-size:0.85rem;">⚠️ Nedostatak</span>' : ''}
+          </div>
         </div>
 
         <div class="status-toggle" style="margin-top:14px;">
@@ -481,6 +563,7 @@
     document.getElementById('v-registracija').value = vehicle ? vehicle.registracija || '' : '';
     document.getElementById('v-baza').value = vehicle ? vehicle.baza || '' : '';
     document.getElementById('v-status').value = vehicle ? vehicle.status : 'ispravno';
+    document.getElementById('v-tip').value = vehicle ? vehicle.tip || '' : '';
     document.getElementById('v-km').value = vehicle ? vehicle.trenutna_kilometraza || '' : '';
     document.getElementById('v-zadnji-datum').value = vehicle ? vehicle.zadnji_servis_datum || '' : '';
     document.getElementById('v-zadnji-km').value = vehicle ? vehicle.zadnji_servis_km || '' : '';
@@ -509,6 +592,7 @@
       registracija: document.getElementById('v-registracija').value,
       baza: document.getElementById('v-baza').value,
       status: document.getElementById('v-status').value,
+      tip: document.getElementById('v-tip').value || null,
       trenutna_kilometraza: document.getElementById('v-km').value || 0,
       zadnji_servis_datum: document.getElementById('v-zadnji-datum').value || null,
       zadnji_servis_km: document.getElementById('v-zadnji-km').value || null,
@@ -580,6 +664,9 @@
       el.listView.classList.add('hidden');
       el.detailView.classList.remove('hidden');
       openDetail(match[1]);
+    } else if (hash === '#/booking') {
+      el.listView.classList.add('hidden');
+      showBookingView();
     } else {
       loadVehicles();
     }

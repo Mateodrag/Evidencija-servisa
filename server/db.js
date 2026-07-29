@@ -157,6 +157,13 @@ CREATE TABLE IF NOT EXISTS kontrole (
   } catch (e) {
     // stupac vjerojatno već postoji - u redu je
   }
+
+  // Migracija za baze napravljene prije dodavanja stupca tip (quad / buggy).
+  try {
+    await dbExec('ALTER TABLE vehicles ADD COLUMN tip TEXT');
+  } catch (e) {
+    // stupac vjerojatno već postoji - u redu je
+  }
 }
 
 module.exports = { dbAll, dbGet, dbRun, dbExec, initSchema, backend };

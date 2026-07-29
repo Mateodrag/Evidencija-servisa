@@ -19,6 +19,11 @@
   </div>
 </header>
 
+<nav class="view-tabs">
+  <button id="tab-popis" class="tab-btn active">📋 Popis vozila</button>
+  <button id="tab-booking" class="tab-btn">📅 Booking</button>
+</nav>
+
 <main id="app">
 
   <!-- ===== POPIS VOZILA ===== -->
@@ -54,6 +59,12 @@
     <div id="detail-content"></div>
   </section>
 
+  <!-- ===== BOOKING - broj quadova/buggyja po lokaciji ===== -->
+  <section id="view-booking" class="view hidden">
+    <p class="field-hint" style="margin-top:0;">Broj trenutno <strong>ispravnih</strong> vozila po lokaciji (neispravna se ne broje).</p>
+    <div id="booking-content"></div>
+  </section>
+
 </main>
 
 <!-- ===== MODAL: Novo / uredi vozilo ===== -->
@@ -72,12 +83,22 @@
         <input id="v-baza" type="text" list="baza-options" placeholder="npr. Baza Zagreb" />
         <datalist id="baza-options"></datalist>
       </label>
-      <label>Status vozila
-        <select id="v-status">
-          <option value="ispravno">Ispravno</option>
-          <option value="neispravno">Neispravno</option>
-        </select>
-      </label>
+      <div class="grid-2">
+        <label>Status vozila
+          <select id="v-status">
+            <option value="ispravno">Ispravno</option>
+            <option value="neispravno">Neispravno</option>
+          </select>
+        </label>
+        <label>Vrsta vozila
+          <select id="v-tip">
+            <option value="">— odaberi —</option>
+            <option value="quad">Quad</option>
+            <option value="buggy">Buggy</option>
+          </select>
+        </label>
+      </div>
+      <p class="field-hint">Vrsta vozila (Quad / Buggy) se koristi za brojanje na kartici "Booking".</p>
       <div class="grid-2">
         <label>Trenutna kilometraža (km)
           <input id="v-km" type="number" min="0" step="1" placeholder="npr. 125000" />
