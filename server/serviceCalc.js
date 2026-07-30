@@ -1,7 +1,7 @@
 // Pomoćne funkcije za izračun sljedećeg servisa i statusa dospijeća.
 
 const SOON_DAYS_THRESHOLD = 14; // koliko dana unaprijed je "uskoro"
-const SOON_KM_THRESHOLD = 1000; // koliko km unaprijed je "uskoro"
+const SOON_KM_THRESHOLD = 222; // koliko km unaprijed je "uskoro"
 
 function addMonths(dateStr, months) {
   if (!dateStr) return null;
