@@ -197,7 +197,13 @@ body {
 }
 
 @media (min-width: 640px) {
-  .filters { grid-template-columns: 2fr 1fr 1fr 1fr; }
+  .filters { grid-template-columns: 1fr 1fr 1fr; }
+  #filter-search { grid-column: 1 / -1; }
+}
+
+@media (min-width: 960px) {
+  .filters { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+  #filter-search { grid-column: auto; }
 }
 
 /* Vehicle list */

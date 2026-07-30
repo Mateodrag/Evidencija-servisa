@@ -80,7 +80,7 @@
 
   let vehicles = [];
   let bazeList = [];
-  let filters = { search: '', baza: '', status: '', servis: '', nedostatak: false };
+  let filters = { search: '', baza: '', tip: '', status: '', servis: '', nedostatak: false };
 
   // ---------- Elementi ----------
 
@@ -95,6 +95,7 @@
     summaryRow: document.getElementById('summary-row'),
     filterSearch: document.getElementById('filter-search'),
     filterBaza: document.getElementById('filter-baza'),
+    filterTip: document.getElementById('filter-tip'),
     filterStatus: document.getElementById('filter-status'),
     filterServis: document.getElementById('filter-servis'),
     detailContent: document.getElementById('detail-content'),
@@ -213,6 +214,9 @@
         if (!hay.includes(q)) return false;
       }
       if (filters.baza && v.baza !== filters.baza) return false;
+      if (filters.tip === 'quad' && v.tip !== 'quad') return false;
+      if (filters.tip === 'dvosjed' && !(v.tip === 'buggy' && v.podtip === 'dvosjed')) return false;
+      if (filters.tip === 'cetverosjed' && !(v.tip === 'buggy' && v.podtip === 'cetverosjed')) return false;
       if (filters.status && v.status !== filters.status) return false;
       if (filters.servis && v.servis_status !== filters.servis) return false;
       if (filters.nedostatak && !v.ima_nedostatak) return false;
@@ -743,6 +747,10 @@
   });
   el.filterBaza.addEventListener('change', (e) => {
     filters.baza = e.target.value;
+    renderList();
+  });
+  el.filterTip.addEventListener('change', (e) => {
+    filters.tip = e.target.value;
     renderList();
   });
   el.filterStatus.addEventListener('change', (e) => {
