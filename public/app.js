@@ -80,7 +80,7 @@
 
   let vehicles = [];
   let bazeList = [];
-  let filters = { search: '', baza: '', status: '', servis: '' };
+  let filters = { search: '', baza: '', status: '', servis: '', nedostatak: false };
 
   // ---------- Elementi ----------
 
@@ -145,20 +145,65 @@
 
   // ---------- Renderiranje popisa ----------
 
+  // Koji je "brzi filter" iz kartica sažetka trenutno aktivan (ako ijedan).
+  function getActiveSummaryKey() {
+    if (filters.nedostatak) return 'nedostatak';
+    if (filters.servis === 'overdue') return 'overdue';
+    if (filters.servis === 'soon') return 'soon';
+    if (filters.status === 'neispravno') return 'neispravno';
+    return 'all';
+  }
+
   function renderSummary(list) {
     const total = list.length;
     const overdue = list.filter((v) => v.servis_status === 'overdue').length;
     const soon = list.filter((v) => v.servis_status === 'soon').length;
     const neispravno = list.filter((v) => v.status === 'neispravno').length;
-    const naslov = filters.baza ? `Ukupno vozila (${escapeHtml(filters.baza)})` : 'Ukupno vozila';
+    const nedostatak = list.filter((v) => v.ima_nedostatak).length;
+    const naslov = filters.baza ? `Ukupno · ${escapeHtml(filters.baza)}` : 'Ukupno';
+    const activeKey = getActiveSummaryKey();
 
-    el.summaryRow.innerHTML = `
-      <div class="summary-chip"><strong>${total}</strong>${naslov}</div>
-      <div class="summary-chip overdue"><strong>${overdue}</strong>Servis dospio</div>
-      <div class="summary-chip soon"><strong>${soon}</strong>Servis uskoro</div>
-      <div class="summary-chip overdue"><strong>${neispravno}</strong>Neispravno</div>
-    `;
+    const chips = [
+      { key: 'all', num: total, label: naslov, cls: '' },
+      { key: 'overdue', num: overdue, label: 'Servis dospio', cls: 'overdue' },
+      { key: 'soon', num: soon, label: 'Servis uskoro', cls: 'soon' },
+      { key: 'neispravno', num: neispravno, label: 'Neispravno', cls: 'overdue' },
+      { key: 'nedostatak', num: nedostatak, label: 'Sa nedostatkom', cls: 'overdue' },
+    ];
+
+    el.summaryRow.innerHTML = chips
+      .map(
+        (c) => `
+      <div class="summary-chip ${c.cls} ${activeKey === c.key ? 'active' : ''}" data-summary-key="${c.key}">
+        <strong>${c.num}</strong>${c.label}
+      </div>`
+      )
+      .join('');
   }
+
+  // Klik na karticu sažetka postavlja odgovarajući filter (ponovni klik ga isključuje).
+  function applySummaryFilter(key) {
+    const current = getActiveSummaryKey();
+    const next = current === key ? 'all' : key;
+
+    filters.status = '';
+    filters.servis = '';
+    filters.nedostatak = false;
+
+    if (next === 'overdue' || next === 'soon') filters.servis = next;
+    else if (next === 'neispravno') filters.status = 'neispravno';
+    else if (next === 'nedostatak') filters.nedostatak = true;
+
+    el.filterServis.value = filters.servis;
+    el.filterStatus.value = filters.status;
+    renderList();
+  }
+
+  el.summaryRow.addEventListener('click', (e) => {
+    const chip = e.target.closest('.summary-chip');
+    if (!chip) return;
+    applySummaryFilter(chip.dataset.summaryKey);
+  });
 
   function applyFilters(list) {
     return list.filter((v) => {
@@ -170,6 +215,7 @@
       if (filters.baza && v.baza !== filters.baza) return false;
       if (filters.status && v.status !== filters.status) return false;
       if (filters.servis && v.servis_status !== filters.servis) return false;
+      if (filters.nedostatak && !v.ima_nedostatak) return false;
       return true;
     });
   }
