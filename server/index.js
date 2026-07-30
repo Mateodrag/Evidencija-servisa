@@ -146,7 +146,10 @@ async function handleApi(req, res, pathname) {
 // ---------- VEHICLES ----------
 
 addRoute('GET', '/api/vehicles', async (req, res) => {
-  const rows = await db.dbAll(`SELECT ${VEHICLE_SELECT} FROM vehicles v ORDER BY v.naziv COLLATE NOCASE`);
+  const rows = await db.dbAll(
+    `SELECT ${VEHICLE_SELECT} FROM vehicles v
+     ORDER BY (v.registracija IS NULL OR v.registracija = ''), v.registracija COLLATE NOCASE`
+  );
   sendJson(res, 200, rows.map(withServiceInfo));
 });
 
