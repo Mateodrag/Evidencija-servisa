@@ -1,7 +1,8 @@
 // Pomoćne funkcije za izračun sljedećeg servisa i statusa dospijeća.
 
 const SOON_DAYS_THRESHOLD = 14; // koliko dana unaprijed je "uskoro"
-const SOON_KM_THRESHOLD = 222; // koliko km unaprijed je "uskoro"
+const SOON_KM_THRESHOLD = 222; // koliko km unaprijed je "uskoro" (vozila koja prate servis po kilometraži)
+const SOON_SATI_THRESHOLD = 5; // koliko radnih sati unaprijed je "uskoro" (vozila koja prate servis po radnim satima)
 
 function addMonths(dateStr, months) {
   if (!dateStr) return null;
@@ -62,7 +63,8 @@ function computeServiceInfo(vehicle) {
     const overdueByDate = daysUntilDue != null && daysUntilDue <= 0;
     const overdueByKm = kmUntilDue != null && kmUntilDue <= 0;
     const soonByDate = daysUntilDue != null && daysUntilDue > 0 && daysUntilDue <= SOON_DAYS_THRESHOLD;
-    const soonByKm = kmUntilDue != null && kmUntilDue > 0 && kmUntilDue <= SOON_KM_THRESHOLD;
+    const soonKmThreshold = vehicle.mjerna_jedinica === 'sati' ? SOON_SATI_THRESHOLD : SOON_KM_THRESHOLD;
+    const soonByKm = kmUntilDue != null && kmUntilDue > 0 && kmUntilDue <= soonKmThreshold;
 
     if (overdueByDate || overdueByKm) {
       level = 'overdue';
