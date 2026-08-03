@@ -116,8 +116,14 @@
         Vozilo za vodiča (rezervirano, ne nudi se gostima za iznajmljivanje)
       </label>
       <p class="field-hint">Vrsta vozila (Quad / Buggy), broj sjedišta kod buggyja i oznaka "za vodiča" koriste se za brojanje na kartici "Booking".</p>
+      <label>Servis se prati po
+        <select id="v-mjerna-jedinica">
+          <option value="km">Kilometraži (km)</option>
+          <option value="sati">Radnim satima (h)</option>
+        </select>
+      </label>
       <div class="grid-2">
-        <label>Trenutna kilometraža (km)
+        <label id="label-v-km">Trenutna kilometraža (km)
           <input id="v-km" type="number" min="0" step="1" placeholder="npr. 125000" />
         </label>
         <label>Zadnji servis - datum
@@ -125,10 +131,10 @@
         </label>
       </div>
       <div class="grid-2">
-        <label>Kilometraža na zadnjem servisu
+        <label id="label-v-zadnji-km">Kilometraža na zadnjem servisu
           <input id="v-zadnji-km" type="number" min="0" step="1" />
         </label>
-        <label>Prvi servis na (km)
+        <label id="label-v-prvi-servis-km">Prvi servis na (km)
           <input id="v-prvi-servis-km" type="number" min="0" step="50" value="500" />
         </label>
       </div>
@@ -136,11 +142,11 @@
         <label>Interval servisa (mjeseci)
           <input id="v-interval-mj" type="number" min="1" step="1" value="6" />
         </label>
-        <label>Interval idućih servisa (km)
+        <label id="label-v-interval-km">Interval idućih servisa (km)
           <input id="v-interval-km" type="number" min="0" step="100" value="1500" />
         </label>
       </div>
-      <p class="field-hint">Dok vozilo nema unesen niti jedan servis, sljedeći servis dospijeva na "Prvi servis (km)". Nakon toga, svaki sljedeći servis dospijeva prema intervalu iznad (npr. svakih 1500 km).</p>
+      <p class="field-hint" id="hint-v-prvi-servis">Dok vozilo nema unesen niti jedan servis, sljedeći servis dospijeva na "Prvi servis (km)". Nakon toga, svaki sljedeći servis dospijeva prema intervalu iznad (npr. svakih 1500 km).</p>
       <div class="modal-actions">
         <button type="button" id="btn-delete-vehicle" class="btn btn-danger hidden">Obriši vozilo</button>
         <div class="spacer"></div>

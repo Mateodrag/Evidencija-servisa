@@ -179,6 +179,16 @@ CREATE TABLE IF NOT EXISTS kontrole (
   } catch (e) {
     // stupac vjerojatno već postoji - u redu je
   }
+
+  // Migracija za baze napravljene prije dodavanja stupca mjerna_jedinica ('km' ili 'sati') -
+  // neka vozila prate servis po radnim satima umjesto po kilometraži. Postojeći stupci
+  // (trenutna_kilometraza, zadnji_servis_km, interval_km, prvi_servis_km) i dalje se koriste
+  // za oba slučaja - samo se drugačije prikazuju (km vs h) ovisno o ovom stupcu.
+  try {
+    await dbExec("ALTER TABLE vehicles ADD COLUMN mjerna_jedinica TEXT DEFAULT 'km'");
+  } catch (e) {
+    // stupac vjerojatno već postoji - u redu je
+  }
 }
 
 module.exports = { dbAll, dbGet, dbRun, dbExec, initSchema, backend };

@@ -20,6 +20,19 @@
     return Number(n).toLocaleString('hr-HR') + ' km';
   }
 
+  // Neka vozila prate servis po radnim satima umjesto po kilometraži (isti brojevi u bazi,
+  // samo se drugačije prikazuju). unit može biti vozilo (objekt s mjerna_jedinica) ili string.
+  function unitOf(vehicleOrUnit) {
+    const mj = vehicleOrUnit && typeof vehicleOrUnit === 'object' ? vehicleOrUnit.mjerna_jedinica : vehicleOrUnit;
+    return mj === 'sati' ? 'sati' : 'km';
+  }
+
+  function fmtMjera(n, vehicleOrUnit) {
+    if (n == null) return '—';
+    const suffix = unitOf(vehicleOrUnit) === 'sati' ? ' h' : ' km';
+    return Number(n).toLocaleString('hr-HR') + suffix;
+  }
+
   function escapeHtml(str) {
     if (str == null) return '';
     return String(str)
@@ -238,8 +251,9 @@
         const servisInfo =
           v.servis_status === 'unknown'
             ? 'nema podataka'
-            : `${fmtDate(v.sljedeci_servis_datum)} / ${fmtKm(v.sljedeci_servis_km)}`;
+            : `${fmtDate(v.sljedeci_servis_datum)} / ${fmtMjera(v.sljedeci_servis_km, v)}`;
         const vrstaRegLabel = `${tipLabel(v) ? tipLabel(v) + ' · ' : ''}${escapeHtml(v.registracija || 'bez registracije')}`;
+        const mjeraLabel = unitOf(v) === 'sati' ? 'Trenutni radni sati' : 'Trenutna kilometraža';
 
         return `
         <div class="vehicle-card ${v.ima_nedostatak ? 'has-defect' : ''}" data-id="${v.id}">
@@ -257,7 +271,7 @@
           </div>
           <div class="vehicle-meta-row">
             <span>Baza: ${escapeHtml(v.baza || 'nije postavljena')}</span>
-            <span>Trenutna kilometraža: ${fmtKm(v.trenutna_kilometraza)}</span>
+            <span>${mjeraLabel}: ${fmtMjera(v.trenutna_kilometraza, v)}</span>
             <span><strong>Sljedeći servis: ${servisInfo}</strong></span>
           </div>
         </div>`;
@@ -398,14 +412,15 @@
   el.tabBooking.addEventListener('click', showBookingView);
 
   function renderDetail(v) {
+    const mjJedinicaLabel = unitOf(v) === 'sati' ? 'radni sati' : 'km';
     const servisInfo =
       v.servis_status === 'unknown'
         ? '<p class="empty-hint" style="padding:0;text-align:left;">Nema još unesenog servisa - unesi prvi servis ispod.</p>'
         : `<div class="info-grid">
             <div><span>Sljedeći servis (datum)</span><strong>${fmtDate(v.sljedeci_servis_datum)}</strong></div>
-            <div><span>Sljedeći servis (km)</span><strong>${fmtKm(v.sljedeci_servis_km)}</strong></div>
+            <div><span>Sljedeći servis (${mjJedinicaLabel})</span><strong>${fmtMjera(v.sljedeci_servis_km, v)}</strong></div>
             <div><span>Zadnji servis (datum)</span><strong>${fmtDate(v.zadnji_servis_datum)}</strong></div>
-            <div><span>Zadnji servis (km)</span><strong>${fmtKm(v.zadnji_servis_km)}</strong></div>
+            <div><span>Zadnji servis (${mjJedinicaLabel})</span><strong>${fmtMjera(v.zadnji_servis_km, v)}</strong></div>
           </div>`;
 
     el.detailContent.innerHTML = `
@@ -435,12 +450,12 @@
 
       <div class="panel">
         <h3>📋 Kontrola vozila</h3>
-        <p class="field-hint" style="margin-top:-6px;">Upiši trenutnu kilometražu i svoje ime svaki put kad preuzmeš/vratiš vozilo. Ako primijetiš kvar ili nedostatak, upiši ga odmah ovdje - automatski će se dodati i u napomene ispod.</p>
+        <p class="field-hint" style="margin-top:-6px;">Upiši trenutn${unitOf(v) === 'sati' ? 'e radne sate' : 'u kilometražu'} i svoje ime svaki put kad preuzmeš/vratiš vozilo. Ako primijetiš kvar ili nedostatak, upiši ga odmah ovdje - automatski će se dodati i u napomene ispod.</p>
 
         <form id="form-kontrola" class="inline-form">
           <div class="grid-2">
-            <label>Trenutna kilometraža *
-              <input type="number" id="k-km" min="0" required placeholder="npr. 132500" value="${v.trenutna_kilometraza || ''}" />
+            <label>${unitOf(v) === 'sati' ? 'Trenutni radni sati' : 'Trenutna kilometraža'} *
+              <input type="number" id="k-km" min="0" required placeholder="${unitOf(v) === 'sati' ? 'npr. 1325' : 'npr. 132500'}" value="${v.trenutna_kilometraza || ''}" />
             </label>
             <label>Ime i prezime *
               <input type="text" id="k-ime" required placeholder="Tvoje ime" />
@@ -460,7 +475,7 @@
                   .map(
                     (k) => `
                   <div class="record-item">
-                    <div class="record-top"><span>${fmtDate(k.datum)}</span><span>${fmtKm(k.kilometraza)}</span></div>
+                    <div class="record-top"><span>${fmtDate(k.datum)}</span><span>${fmtMjera(k.kilometraza, v)}</span></div>
                     <div class="record-desc">${k.nedostaci ? escapeHtml(k.nedostaci) : 'Nema uočenih nedostataka'}</div>
                     <div class="record-author">Unio/la: ${escapeHtml(k.ime || 'Nepoznato')}</div>
                   </div>`
@@ -480,7 +495,7 @@
                   .map(
                     (s) => `
               <div class="record-item">
-                <div class="record-top"><span>${s.redni_broj}. servis · ${fmtDate(s.datum)}</span><span>${fmtKm(s.kilometraza)}</span></div>
+                <div class="record-top"><span>${s.redni_broj}. servis · ${fmtDate(s.datum)}</span><span>${fmtMjera(s.kilometraza, v)}</span></div>
                 ${s.opis ? `<div class="record-desc">${escapeHtml(s.opis)}</div>` : ''}
                 ${s.izvrsio ? `<div class="record-author">Unio/la: ${escapeHtml(s.izvrsio)}</div>` : ''}
               </div>`
@@ -496,8 +511,8 @@
             <label>Datum servisa
               <input type="date" id="s-datum" required value="${todayISO()}" />
             </label>
-            <label>Kilometraža
-              <input type="number" id="s-km" min="0" placeholder="npr. 132000" />
+            <label>${unitOf(v) === 'sati' ? 'Radni sati' : 'Kilometraža'}
+              <input type="number" id="s-km" min="0" placeholder="${unitOf(v) === 'sati' ? 'npr. 1320' : 'npr. 132000'}" />
             </label>
           </div>
           <label>Opis izvršenih radova
@@ -660,6 +675,8 @@
     document.getElementById('v-podtip').value = vehicle ? vehicle.podtip || '' : '';
     togglePodtipField();
     document.getElementById('v-za-vodica').checked = vehicle ? !!vehicle.za_vodica : false;
+    document.getElementById('v-mjerna-jedinica').value = vehicle ? vehicle.mjerna_jedinica || 'km' : 'km';
+    updateUnitLabels();
     document.getElementById('v-km').value = vehicle ? vehicle.trenutna_kilometraza || '' : '';
     document.getElementById('v-zadnji-datum').value = vehicle ? vehicle.zadnji_servis_datum || '' : '';
     document.getElementById('v-zadnji-km').value = vehicle ? vehicle.zadnji_servis_km || '' : '';
@@ -682,6 +699,30 @@
 
   document.getElementById('v-tip').addEventListener('change', togglePodtipField);
 
+  // Neka vozila prate servis po radnim satima umjesto po kilometraži - kad se promijeni
+  // odabir u formi, prebaci sve povezane oznake polja između "km" i "radni sati" teksta.
+  function updateUnitLabels() {
+    const isSati = document.getElementById('v-mjerna-jedinica').value === 'sati';
+    document.getElementById('label-v-km').firstChild.textContent = isSati
+      ? 'Trenutni radni sati (h) '
+      : 'Trenutna kilometraža (km) ';
+    document.getElementById('v-km').placeholder = isSati ? 'npr. 1250' : 'npr. 125000';
+    document.getElementById('label-v-zadnji-km').firstChild.textContent = isSati
+      ? 'Radni sati na zadnjem servisu '
+      : 'Kilometraža na zadnjem servisu ';
+    document.getElementById('label-v-prvi-servis-km').firstChild.textContent = isSati
+      ? 'Prvi servis na (radni sati) '
+      : 'Prvi servis na (km) ';
+    document.getElementById('label-v-interval-km').firstChild.textContent = isSati
+      ? 'Interval idućih servisa (radni sati) '
+      : 'Interval idućih servisa (km) ';
+    document.getElementById('hint-v-prvi-servis').textContent = isSati
+      ? 'Dok vozilo nema unesen niti jedan servis, sljedeći servis dospijeva na "Prvi servis (radni sati)". Nakon toga, svaki sljedeći servis dospijeva prema intervalu iznad (npr. svakih 100 radnih sati).'
+      : 'Dok vozilo nema unesen niti jedan servis, sljedeći servis dospijeva na "Prvi servis (km)". Nakon toga, svaki sljedeći servis dospijeva prema intervalu iznad (npr. svakih 1500 km).';
+  }
+
+  document.getElementById('v-mjerna-jedinica').addEventListener('change', updateUnitLabels);
+
   el.btnAddVehicle.addEventListener('click', () => openVehicleModal(null));
   el.btnCancelVehicle.addEventListener('click', closeVehicleModal);
   el.modalVehicle.addEventListener('click', (e) => {
@@ -699,6 +740,7 @@
       tip: document.getElementById('v-tip').value || null,
       podtip: document.getElementById('v-tip').value === 'buggy' ? (document.getElementById('v-podtip').value || null) : null,
       za_vodica: document.getElementById('v-za-vodica').checked,
+      mjerna_jedinica: document.getElementById('v-mjerna-jedinica').value || 'km',
       trenutna_kilometraza: document.getElementById('v-km').value || 0,
       zadnji_servis_datum: document.getElementById('v-zadnji-datum').value || null,
       zadnji_servis_km: document.getElementById('v-zadnji-km').value || null,
